@@ -12,6 +12,7 @@ class Player {
 
   public:
     Player(const std::string& texture_file);
+    sf::Vector2f GetPosition() const;
     void HandleInput();
     void Update(const std::vector<sf::FloatRect>& collision_bounds);
     void Draw(sf::RenderWindow& window);
