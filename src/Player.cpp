@@ -17,6 +17,10 @@ Player::Player(const std::string& texture_file) {
   player_sprite_.setPosition(10, 50);
 }
 
+sf::Vector2f Player::GetPosition() const {
+  return player_sprite_.getPosition();
+}
+
 void Player::HandleInput() {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
     body_.x_speed = -0.1f;
