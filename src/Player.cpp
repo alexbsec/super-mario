@@ -1,5 +1,12 @@
 #include "Player.hpp"
 
+void Player::CheckXMovement_() {
+  if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && !sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && sf::Keyboard::isKeyPressed(sf::Keyboard::X)) body_.x_speed = 0;
+  if (body_.is_accelerating && !sf::Keyboard::isKeyPressed(sf::Keyboard::X)) body_.is_accelerating = false;
+  if (!body_.is_accelerating) body_.x_speed = 0;
+
+}
+
 Player::Player(const std::string& texture_file) {
   if (!player_texture_.loadFromFile(texture_file)) {
     // handle
@@ -7,12 +14,16 @@ Player::Player(const std::string& texture_file) {
 
   player_sprite_.setTexture(player_texture_);
 
-  body_.gravity = 0.002f;
-  body_.terminal_velocity = 0.4f;
+  body_.gravity = 1500.0f;
+  body_.terminal_velocity = 2240.0f;
   body_.x_speed = 0.0f;
   body_.y_speed = 0.0f;
-  body_.jump_speed = 0.65f;
+  body_.jump_speed = 480.0f;
   body_.is_jumping = false;
+  body_.acceleration = 100.0f;
+  body_.max_x_speed = 145.0f;
+  body_.is_accelerating = false;
+  body_.has_jumped = false;
 
   player_sprite_.setPosition(10, 50);
 }
@@ -21,30 +32,54 @@ sf::Vector2f Player::GetPosition() const {
   return player_sprite_.getPosition();
 }
 
-void Player::HandleInput() {
+void Player::HandleInput(const sf::Event& event, float delta_time) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-    body_.x_speed = -0.1f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X)) {
+      if (body_.x_speed > -100.0f) body_.x_speed = -100.0f;
+      body_.x_speed -= body_.acceleration * delta_time;
+      body_.is_accelerating = true;
+      if (body_.x_speed < -body_.max_x_speed) {
+        body_.x_speed = -body_.max_x_speed;
+      }
+    } else {
+      body_.is_accelerating = false;
+      body_.x_speed = -100.0f;
+    }
   }
 
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-    body_.x_speed = 0.1f;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::X)) {
+      if (body_.x_speed < 100.0f) body_.x_speed = 100.0f;
+      body_.x_speed += body_.acceleration * delta_time;
+      body_.is_accelerating = true;
+      if (body_.x_speed > body_.max_x_speed) {
+        body_.x_speed = body_.max_x_speed;
+      }
+    } else {
+      body_.is_accelerating = false;
+      body_.x_speed = 100.0f;
+    }
   }
 
-
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && !body_.is_jumping) {
-    body_.y_speed = -body_.jump_speed;
-    body_.is_jumping = true;
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && event.key.code == sf::Keyboard::Up) {
+    if (!body_.is_jumping && !body_.has_jumped) {
+      body_.y_speed = -body_.jump_speed;
+      body_.is_jumping = true;
+      body_.has_jumped = true;
+    }
+  } else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+    body_.has_jumped = false;
   }
 }
 
-void Player::Update(const std::vector<sf::FloatRect>& collision_bounds) {
+void Player::Update(const std::vector<sf::FloatRect>& collision_bounds, float delta_time) {
   // Gravity
-  body_.y_speed += body_.gravity;
+  body_.y_speed += delta_time * body_.gravity;
   if (body_.y_speed >= body_.terminal_velocity) {
     body_.y_speed = body_.terminal_velocity;
   }
 
-  player_sprite_.move(0.0f, body_.y_speed);
+  player_sprite_.move(0.0f, body_.y_speed * delta_time);
 
   // Horizontal movement check (left-right)
   sf::Vector2f player_position = player_sprite_.getPosition();
@@ -65,7 +100,7 @@ void Player::Update(const std::vector<sf::FloatRect>& collision_bounds) {
     }
   }
 
-  player_sprite_.move(body_.x_speed, 0.0f);
+  player_sprite_.move(body_.x_speed * delta_time, 0.0f);
 
   player_position = player_sprite_.getPosition();
   player_bounds = player_sprite_.getGlobalBounds();
@@ -88,10 +123,24 @@ void Player::Update(const std::vector<sf::FloatRect>& collision_bounds) {
     }
   }
 
-  body_.x_speed = 0;
+  CheckXMovement_();
 
-}
+ }
 
 void Player::Draw(sf::RenderWindow& window) {
   window.draw(player_sprite_);
+}
+
+sf::FloatRect Player::GetCollisionBounds() const {
+  return player_sprite_.getGlobalBounds();
+}
+
+float Player::GetYSpeed() const {
+  return body_.y_speed;
+}
+
+void Player::Bounce() {
+  body_.y_speed -= body_.jump_speed;
+  body_.is_jumping = true;
+  body_.has_jumped = true;
 }
