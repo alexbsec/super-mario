@@ -2,12 +2,12 @@
 
 Camera::Camera(float screen_width, float screen_height, float level_width, float level_height) : screen_width_(screen_width), screen_height_(screen_height), level_width_(level_width), level_height_(level_height), zoom_factor_(1.0f) {
   view_.setSize(screen_width, screen_height);
-  view_.setCenter(screen_width / 2, screen_height / 2);
+  view_.setCenter(screen_width / 2, screen_height / 2 - 30);
 }
 
 void Camera::Update(const sf::Vector2f& player_position) {
   float camera_x = player_position.x;
-  float camera_y = player_position.y;
+  float camera_y = 0;
 
   float x = screen_width_ * zoom_factor_ / 2;
   float y = screen_height_ * zoom_factor_ / 2;
