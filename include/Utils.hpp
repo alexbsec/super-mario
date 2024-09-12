@@ -2,9 +2,22 @@
 #define UTILS_HPP
 
 #include "Map.hpp"
+#include "Enemy.hpp"
 #include <vector>
 
+// Enemies
+
+std::vector<std::unique_ptr<Enemy>> SetEnemies();
+
+// Background
+
+std::vector<std::vector<int>> MakeBackground();
+
 // Brute force xD
+
+void PlaceRightTriangle(std::vector<std::vector<int>>& level, int bottom, int left, int height);
+
+void PlaceLeftTriangle(std::vector<std::vector<int>>& level, int bottom, int right, int height);
 
 void PlacePipe(std::vector<std::vector<int>>& level, int top, int left, int height);
 
