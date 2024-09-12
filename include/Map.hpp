@@ -42,12 +42,15 @@ class Tile {
 
 class Map {
   private:
+    std::vector<Tile> bg_tiles_;
     std::vector<Tile> tiles_;
     sf::Texture tileset_texture_;
 
   public:
     Map(const std::string& tileset_path);
+    void LoadBackground(const std::string& tileset, const std::vector<std::vector<int>>& bg);
     void LoadMap(const std::string& tileset, const std::vector<std::vector<int>>& level_data);
+    void DrawBackground(sf::RenderWindow& window);
     void Draw(sf::RenderWindow& window);
     std::vector<sf::FloatRect> GetCollisionBounds();
 };
