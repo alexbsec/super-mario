@@ -1,6 +1,14 @@
 #include "Utils.hpp"
 #include <algorithm>
 
+void Print(const std::string& text) {
+  std::cout << text << std::endl;
+}
+
+bool CheckBounds(const sf::FloatRect& first_bounds, const sf::FloatRect& second_bounds) {
+  return (first_bounds.top + first_bounds.height > second_bounds.top && first_bounds.top < second_bounds.top + second_bounds.height);
+}
+
 std::vector<std::unique_ptr<Enemy>> SetEnemies() {
   std::vector<std::unique_ptr<Enemy>> enemies;
   int ground = 257;
