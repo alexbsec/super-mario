@@ -24,6 +24,9 @@ class Camera {
     void Update(const sf::Vector2f& player_position);
 
     void Apply(sf::RenderWindow& window);
+    sf::View GetView() const;
+    sf::FloatRect GetViewBounds() const;
+
 };
 
 #endif

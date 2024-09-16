@@ -24,12 +24,39 @@ sf::Sprite& Tile::GetSprite() {
   return sprite_;
 }
 
+bool Tile::HasItem() const {
+  return item_ != nullptr;
+}
+
+std::shared_ptr<Item> Tile::ReleaseItem() const {
+  if (HasItem()) {
+    auto released = item_;
+    return released;
+  }
+
+  return nullptr;
+}
+
+void Tile::SetItem(std::shared_ptr<Item> item) {
+  item_ = item;
+}
+
 /* Map class implementation */
 
 Map::Map(const std::string& tileset_path) : tiles_({}) {
   if (!tileset_texture_.loadFromFile(tileset_path)) {
         // Handle
-      }
+  }
+}
+
+Map::Map(const std::string& tileset_path, const std::string& item_texture_path) : tiles_({}) {
+  if (!tileset_texture_.loadFromFile(tileset_path)) {
+    // handle
+  }
+
+  if (!item_texture_.loadFromFile(item_texture_path)) {
+    // handle
+  }
 }
 
 void Map::LoadBackground(
@@ -55,6 +82,7 @@ void Map::LoadBackground(
 
       Tile tile(tile_type, texture_rect, is_solid, behavior, tileset_texture_);
       tile.GetSprite().setPosition(x * tile_size, y * tile_size);
+
       bg_tiles_.push_back(tile);
     }
   }
@@ -70,9 +98,10 @@ void Map::LoadMap(
   for (size_t y = 0; y < level_data.size(); y++) {
     for (size_t x = 0; x < level_data[y].size(); x++) {
       int tile_type = level_data[y][x];
-      sf::IntRect texture_rect;
+      sf::IntRect texture_rect, item_rect;
       bool is_solid = false;
       TileType behavior = TileType::SIMPLE;
+      std::shared_ptr<Item> item = nullptr;
 
       switch (tile_type) {
         case 1:
@@ -139,23 +168,46 @@ void Map::LoadMap(
           break;
 
         case 10:
-          // Item block
+          // Item block with mushroom
           texture_rect = sf::IntRect(24 * tile_size, 0 * tile_size, tile_size, tile_size);
           is_solid = true;
           behavior = TileType::INTERACTABLE;
+          item_rect = sf::IntRect(1 * tile_size, 0 * tile_size, tile_size, tile_size);
+
+          item = std::make_shared<Mushroom>(item_texture_, item_rect);
+          item->SetInitialAndTargetPosition(x * tile_size, y * tile_size, y * tile_size - tile_size);
           break;
 
         case 11:
-          // blue sky bg
-          texture_rect = sf::IntRect(3 * tile_size, 21 * tile_size, tile_size, tile_size);
-          is_solid = false;
-          behavior = TileType::SIMPLE;
+          // Item block with flower
+          texture_rect = sf::IntRect(24 * tile_size, 0 * tile_size, tile_size, tile_size);
+          is_solid = true;
+          behavior = TileType::INTERACTABLE;
+          item_rect = sf::IntRect(0 * tile_size, 0 * tile_size, tile_size, tile_size);
+
+          item  = std::make_shared<Flower>(item_texture_, item_rect);
+          item->SetInitialAndTargetPosition(x * tile_size, y * tile_size, y * tile_size - tile_size);
+          break;
+
+          case 12:
+          // Item block with star
+          texture_rect = sf::IntRect(24 * tile_size, 0 * tile_size, tile_size, tile_size);
+          is_solid = true;
+          behavior = TileType::INTERACTABLE;
+          item_rect = sf::IntRect(2 * tile_size, 0 * tile_size, tile_size, tile_size);
+
+          item = std::make_shared<Star>(item_texture_, item_rect);
+          item->SetInitialAndTargetPosition(x * tile_size, y * tile_size, y * tile_size - tile_size);
+          break;
+
         case 0:
           continue;
       }
 
       Tile tile(tile_type, texture_rect, is_solid, behavior, tileset_texture_);
       tile.GetSprite().setPosition(x * tile_size, y * tile_size);
+
+      if (item) tile.SetItem(item);
 
       tiles_.push_back(tile);
     }
@@ -181,4 +233,20 @@ std::vector<sf::FloatRect> Map::GetCollisionBounds() {
   }
 
   return bounds;
+}
+
+std::shared_ptr<Item> Map::ReleaseItemFromBlock(int tile_x, int tile_y) {
+  for (auto& tile : tiles_) {
+    if (tile.GetTileType() == TileType::INTERACTABLE && tile.HasItem()) {
+      return tile.ReleaseItem();
+    }
+  }
+  return nullptr;
+}
+
+void Map::PlaceItem(int tile_x, int tile_y, ItemType item_type) {
+}
+
+const std::vector<Tile>& Map::GetTiles() const {
+  return tiles_;
 }
