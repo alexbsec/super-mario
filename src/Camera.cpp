@@ -34,3 +34,16 @@ void Camera::Update(const sf::Vector2f& player_position) {
 void Camera::Apply(sf::RenderWindow& window) {
   window.setView(view_);
 }
+
+sf::View Camera::GetView() const {
+  return view_;
+}
+
+sf::FloatRect Camera::GetViewBounds() const {
+  sf::Vector2f view_center = view_.getCenter();
+  sf::Vector2f view_size = view_.getSize();
+
+  sf::Vector2f view_top_left(view_center.x - view_size.x / 2.0f, view_center.y - view_size.y / 2.0f);
+
+  return sf::FloatRect(view_top_left.x, view_top_left.y, view_size.x, view_size.y);
+}
