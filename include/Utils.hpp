@@ -4,6 +4,13 @@
 #include "Map.hpp"
 #include "Enemy.hpp"
 #include <vector>
+#include <iostream>
+
+// Utilities
+
+void Print(const std::string& text);
+
+bool CheckBounds(const sf::FloatRect& first_bounds, const sf::FloatRect& second_bounds);
 
 // Enemies
 
