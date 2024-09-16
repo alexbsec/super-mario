@@ -17,18 +17,20 @@ Enemy::Enemy(const std::string& texture_file) : is_dead_(false), death_timer_sta
 Enemy::~Enemy() {}
 
 void Enemy::Update(const std::vector<sf::FloatRect>& collision_bounds, float delta_time) {
-  body_.y_speed += body_.gravity * delta_time;
-  if (body_.y_speed > body_.terminal_velocity) {
-    body_.y_speed = body_.terminal_velocity;
-  }
-
-  HandleCollision(collision_bounds);
-
   if (!is_dead_) {
-    if (body_.is_moving_left) {
-      sprite_.move(-body_.x_speed * delta_time, body_.y_speed * delta_time);
-    } else {
-      sprite_.move(body_.x_speed * delta_time, body_.y_speed * delta_time);
+    body_.y_speed += body_.gravity * delta_time;
+    if (body_.y_speed > body_.terminal_velocity) {
+      body_.y_speed = body_.terminal_velocity;
+    }
+
+    HandleCollision(collision_bounds);
+
+    if (!is_dead_) {
+      if (body_.is_moving_left) {
+        sprite_.move(-body_.x_speed * delta_time, body_.y_speed * delta_time);
+      } else {
+        sprite_.move(body_.x_speed * delta_time, body_.y_speed * delta_time);
+      }
     }
   }
 }
@@ -37,39 +39,41 @@ void Enemy::HandleCollision(const std::vector<sf::FloatRect>& collision_bounds) 
     sf::FloatRect enemy_bounds = sprite_.getGlobalBounds();
     sf::Vector2f position = sprite_.getPosition();
 
-    // First loop: Handle vertical collisions (landing on the ground or hitting the ceiling)
-    for (const auto& bound : collision_bounds) {
-        if (enemy_bounds.intersects(bound)) {
-            // Handle vertical collision (falling onto the ground)
-            if (body_.y_speed > 0 && enemy_bounds.top + enemy_bounds.height <= bound.top + body_.y_speed) {
-                // Goomba is falling and hits the ground
-                if (!is_dead_) sprite_.setPosition(position.x, bound.top - enemy_bounds.height);  // Adjust y-position to land
-                body_.y_speed = 0;  // Stop vertical movement
-            }
-            else if (body_.y_speed < 0 && enemy_bounds.top >= bound.top + bound.height) {
-                if (!is_dead_) sprite_.setPosition(position.x, bound.top + bound.height);  // Adjust y-position to stay below ceiling
-                body_.y_speed = 0;  // Stop upward movement
-            }
-        }
-    }
+    if (!is_dead_) {
+      // First loop: Handle vertical collisions (landing on the ground or hitting the ceiling)
+      for (const auto& bound : collision_bounds) {
+          if (enemy_bounds.intersects(bound)) {
+              // Handle vertical collision (falling onto the ground)
+              if (body_.y_speed > 0 && enemy_bounds.top + enemy_bounds.height <= bound.top + body_.y_speed) {
+                  // Goomba is falling and hits the ground
+                  if (!is_dead_) sprite_.setPosition(position.x, bound.top - enemy_bounds.height);  // Adjust y-position to land
+                  body_.y_speed = 0;  // Stop vertical movement
+              }
+              else if (body_.y_speed < 0 && enemy_bounds.top >= bound.top + bound.height) {
+                  if (!is_dead_) sprite_.setPosition(position.x, bound.top + bound.height);  // Adjust y-position to stay below ceiling
+                  body_.y_speed = 0;  // Stop upward movement
+              }
+          }
+      }
 
-    // Second loop: Handle horizontal collisions (hitting walls)
-    for (const auto& bound : collision_bounds) {
-        if (enemy_bounds.intersects(bound)) {
-            // Handle horizontal collision (hitting a wall)
-            if (body_.is_moving_left && enemy_bounds.left <= bound.left + bound.width) {
-                if (enemy_bounds.top + enemy_bounds.height > bound.top && enemy_bounds.top < bound.top + bound.height) {
-                    // Goomba hits a wall on the left
-                    body_.is_moving_left = false;  // Turn right
-                }
-            } else if (!body_.is_moving_left && enemy_bounds.left + enemy_bounds.width >= bound.left) {
-                if (enemy_bounds.top + enemy_bounds.height > bound.top && enemy_bounds.top < bound.top + bound.height) {
-                    // Goomba hits a wall on the right
-                    body_.is_moving_left = true;  // Turn left
-                }
-            }
-        }
-    }
+      // Second loop: Handle horizontal collisions (hitting walls)
+      for (const auto& bound : collision_bounds) {
+          if (enemy_bounds.intersects(bound)) {
+              // Handle horizontal collision (hitting a wall)
+              if (body_.is_moving_left && enemy_bounds.left <= bound.left + bound.width) {
+                  if (enemy_bounds.top + enemy_bounds.height > bound.top && enemy_bounds.top < bound.top + bound.height) {
+                      // Goomba hits a wall on the left
+                      body_.is_moving_left = false;  // Turn right
+                  }
+              } else if (!body_.is_moving_left && enemy_bounds.left + enemy_bounds.width >= bound.left) {
+                  if (enemy_bounds.top + enemy_bounds.height > bound.top && enemy_bounds.top < bound.top + bound.height) {
+                      // Goomba hits a wall on the right
+                      body_.is_moving_left = true;  // Turn left
+                  }
+              }
+          }
+      }
+   }
 }
 
 
@@ -83,7 +87,7 @@ sf::FloatRect Enemy::GetBounds() const {
 
 bool Enemy::IsDead() {
   if (is_dead_) {
-    if (death_timer_.getElapsedTime().asSeconds() >= 2.0f) {
+    if (death_timer_.getElapsedTime().asSeconds() >= 0.3f) {
       return true;
     }
   }
@@ -104,7 +108,18 @@ Goomba::Goomba(const std::string& texture_file)
 
 void Goomba::OnJumpedOn() {
   is_dead_ = true;
+
+  sf::FloatRect bounds = sprite_.getGlobalBounds();
+  sprite_.setOrigin(bounds.width / 2.0f, bounds.height);
+
   sprite_.setScale(1.0f, 0.2f);
+
+  sf::FloatRect new_bounds = sprite_.getGlobalBounds();
+  float x = sprite_.getPosition().x, y = sprite_.getPosition().y;
+  float offset = 2.0f + bounds.height - new_bounds.height;
+
+  sprite_.setPosition(x, y + offset);
+
   if (!death_timer_started_) {
     death_timer_.restart();
     death_timer_started_ = true;
