@@ -1,6 +1,14 @@
 #ifndef PHYSICS_HPP
 #define PHYSICS_HPP
 
+struct ItemPhysics {
+  float gravity;
+  float terminal_velocity;
+  float x_speed;
+  float y_speed;
+  float is_moving_left;
+};
+
 struct EnemyPhysics {
   float gravity;
   float terminal_velocity;
