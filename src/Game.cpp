@@ -6,6 +6,28 @@ const int TILE_SIZE = 16;
 const int TILES_X = 16;
 const int TILES_Y = 15;
 
+void LoadSoundtrack(const std::string& path, bool start) {
+  static sf::Music background_music;
+  if (!background_music.openFromFile(path)) {
+    std::cerr << "Error: could not load mp3" << std::endl;
+  }
+
+  if (start) {
+    background_music.stop();
+
+    // Reset the music to the beginning by setting the playing offset to 0
+    background_music.setPlayingOffset(sf::Time::Zero);
+
+    // Optionally start the music again
+    background_music.play();
+    return;
+  }
+
+  background_music.setLoop(true);
+  background_music.setVolume(50.0f);
+  background_music.play();
+}
+
 Map GetTestMap() {
   std::vector<std::vector<int>> level_data = MakeLevel1();
   Map map("assets/lv1-tileset.png", "assets/item_tilesheet.png");
@@ -75,6 +97,44 @@ void PlayFadeout(sf::RenderWindow& window, float& fade_alpha, sf::Font& font, bo
     }
 }
 
+void InteractWithItem(Player& player, std::vector<std::shared_ptr<Item>>& items) {
+  const int x_range = 5.0f;
+  const int y_range = 5.0f;
+  auto it = items.begin();
+  while (it != items.end()) {
+    sf::Vector2f item_position = (*it)->GetSprite().getPosition();
+    sf::Vector2f player_position = player.GetPosition();
+    if ((*it)->GetState() != ItemState::ACTIVE) {
+      ++it;
+      continue;
+    }
+
+    if (item_position.x <= player_position.x + x_range && item_position.x >= player_position.x - x_range) {
+      if (item_position.y <= player_position.y + y_range && item_position.y >= player_position.y - y_range) {
+        Status player_status;
+        switch ((*it)->GetItemType()) {
+          case ItemType::MUSHROOM:
+            player_status = Status::BIG;
+            break;
+          case ItemType::FLOWER:
+            player_status = Status::FIRE;
+            break;
+          case ItemType::STAR:
+            player_status = Status::FIRE;
+            break;
+        }
+
+        player.Upgrade(player_status);
+        it = items.erase(it);
+      } else {
+        ++it;
+      }
+    } else {
+      ++it;
+    }
+  }
+}
+
 bool IsPlayerOnScreen(const Player& mario, const Camera& camera) {
   sf::FloatRect mario_bounds = mario.GetCollisionBounds();
   sf::FloatRect view_bounds = camera.GetViewBounds();
@@ -119,7 +179,7 @@ void UpdatePlayer(sf::Event event, Player& mario, std::vector<std::unique_ptr<En
         }
 
         if (!mario.IsInGrace() && mario_bounds.top + mario_bounds.height > enemy_bounds.top && mario_bounds.top < enemy_bounds.top + enemy_bounds.height) {
-          mario.Die(true);
+          mario.Downgrade();
         }
       }
     }
@@ -129,7 +189,6 @@ void UpdatePlayer(sf::Event event, Player& mario, std::vector<std::unique_ptr<En
 // TO implement
 void UpdateItem(Player& player, Map& map, float delta_time) {
   std::vector<sf::FloatRect> collision_bounds = map.GetCollisionBounds();
-  collision_bounds.push_back(player.GetCollisionBounds());
 
   for (auto& tile : map.GetTiles()) {
     if (tile.GetTileType() == TileType::INTERACTABLE && tile.HasItem()) {
@@ -238,7 +297,7 @@ bool GameLoop(sf::RenderWindow& window, sf::Clock clock, Player& mario, std::vec
 
     UpdatePlayer(event, mario, enemies, map, delta_time.asSeconds());
 
-    if (!mario.IsDead()) {
+    if (!mario.IsDead() && !mario.ChangingState()) {
       UpdateEnemies(mario, mario_collision_bounds, enemies, map, delta_time.asSeconds());
       UpdateCamera(camera, mario);
     }
@@ -251,10 +310,25 @@ bool GameLoop(sf::RenderWindow& window, sf::Clock clock, Player& mario, std::vec
     camera.Apply(window);
 
     DrawBackground(window, bg);
+
+    for (auto& item : active_items) {
+      if (item->GetState() == ItemState::POPPING) {
+        item->Draw(window);
+      }
+    }
+
     DrawMap(window, map);
+
+    for (auto& item : active_items) {
+      if (item->GetState() == ItemState::ACTIVE) {
+        item->Draw(window);
+      }
+    }
+
     DrawPlayer(window, mario);
     DrawEnemy(window, enemies);
-    DrawItem(window, active_items);
+
+    InteractWithItem(mario, active_items);
 
     if (mario.IsDead() && !IsPlayerOnScreen(mario, camera)) {
       PlayFadeout(window, fade_alpha, font, show_play_again, camera.GetView());

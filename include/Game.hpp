@@ -3,12 +3,15 @@
 
 #include <algorithm>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Player.hpp"
 #include "Map.hpp"
 #include "Utils.hpp"
 #include "Camera.hpp"
 #include "Enemy.hpp"
 #include "Item.hpp"
+
+void LoadSoundtrack(const std::string& path, bool start);
 
 Map GetTestMap();
 
@@ -19,6 +22,8 @@ Camera MakeCamera(sf::RenderWindow& window, float zoom_factor);
 void PlayFadeout(sf::RenderWindow& window, float& fade_alpha, sf::Font& font, bool& show_play_again, const sf::View& camera_view);
 
 bool IsPlayerOnScreen(const Player& mario, const Camera& camera);
+
+void InteractWithItem(Player& mario, std::vector<std::shared_ptr<Item>>& items);
 
 void UpdateEnemies(Player mario, std::vector<sf::FloatRect>& mario_bounds, std::vector<std::unique_ptr<Enemy>>& enemies, Map& map, float delta_time);
 
