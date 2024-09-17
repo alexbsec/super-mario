@@ -7,7 +7,8 @@ BUILD_DIR = build
 
 INCLUDES = -I/usr/local/Cellar/sfml/2.6.1/include
 
-LDFLAGS = -L/usr/local/Cellar/sfml/2.6.1/lib -lsfml-graphics -lsfml-window -lsfml-system
+LDFLAGS = -L/usr/local/Cellar/sfml/2.6.1/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SOURCES))
