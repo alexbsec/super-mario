@@ -3,16 +3,30 @@
 
 #include <SFML/Graphics.hpp>
 #include "Physics.hpp"
+#include <unordered_map>
+#include <vector>
+
+enum class Status {
+  NORMAL,
+  BIG,
+  FIRE,
+  IMMORTAL
+};
 
 class Player {
   private:
     sf::Texture player_texture_;
     sf::Sprite player_sprite_;
+    std::unordered_map<Status, std::vector<sf::Sprite>> player_sprites_;
     BodyPhysics body_;
     bool is_dead_;
     bool has_died_;
     float grace_time_;
     bool jump_dead_;
+    Status status_;
+    float animation_time_ = 0.0f;
+    float x_scale_ = 1.0f;
+    bool changing_state_ = false;
 
     void CheckXMovement_();
     void PlayDeathAnimation_(float delta_time);
@@ -31,6 +45,13 @@ class Player {
     void SetGracePeriod(float time);
     bool IsInGrace() const;
     void Reset();
+
+    // Status methods
+    Status GetStatus() const;
+    void SetStatus(Status status);
+    void Downgrade();
+    void Upgrade(Status status);
+    bool ChangingState() const;
 };
 
 #endif

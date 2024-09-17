@@ -21,12 +21,36 @@ void Player::PlayDeathAnimation_(float delta_time) {
   player_sprite_.move(0.0f, body_.y_speed * delta_time);
 }
 
-Player::Player(const std::string& texture_file) : is_dead_(false), has_died_(false), grace_time_(0.0f), jump_dead_(true) {
+Player::Player(const std::string& texture_file) : is_dead_(false), has_died_(false), grace_time_(0.0f), jump_dead_(true), status_(Status::NORMAL) {
   if (!player_texture_.loadFromFile(texture_file)) {
     // handle
   }
 
-  player_sprite_.setTexture(player_texture_);
+  // Normal state sprite (small mario)
+  for (int i = 0; i < 6; i++) {
+    sf::Sprite sprite;
+    sprite.setTexture(player_texture_);
+    sprite.setTextureRect(sf::IntRect(i * 12, 0 * 16, 12, 16));
+    //sprite.setScale(12.0f / 16.0f, 16.0f / 32.0f);
+    player_sprites_[Status::NORMAL].push_back(sprite);
+  }
+
+
+  // Big state (super mario)
+  for (int i = 0; i < 7; i++) {
+    sf::Sprite sprite;
+    sprite.setTexture(player_texture_);
+    sprite.setTextureRect(sf::IntRect(i * 16, 1 * 32 - 16, 16, 32));
+    player_sprites_[Status::BIG].push_back(sprite);
+  }
+
+  // Fire state (flower mario)
+  for (int i = 0; i < 7; i++) {
+    sf::Sprite sprite;
+    sprite.setTexture(player_texture_);
+    sprite.setTextureRect(sf::IntRect(i * 16, 2 * 32 - 16, 16, 32));
+    player_sprites_[Status::FIRE].push_back(sprite);
+  }
 
   body_.gravity = 1500.0f;
   body_.terminal_velocity = 2240.0f;
@@ -39,7 +63,9 @@ Player::Player(const std::string& texture_file) : is_dead_(false), has_died_(fal
   body_.is_accelerating = false;
   body_.has_jumped = false;
 
+  player_sprite_ = player_sprites_[Status::NORMAL][0];
   player_sprite_.setPosition(10, 50);
+
 }
 
 sf::Vector2f Player::GetPosition() const {
@@ -60,6 +86,8 @@ void Player::HandleInput(const sf::Event& event, float delta_time) {
         body_.is_accelerating = false;
         body_.x_speed = -100.0f;
       }
+
+      x_scale_ = -1.0f;
     }
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
@@ -74,7 +102,10 @@ void Player::HandleInput(const sf::Event& event, float delta_time) {
         body_.is_accelerating = false;
         body_.x_speed = 100.0f;
       }
+
+      x_scale_ = 1.0f;
     }
+
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && event.key.code == sf::Keyboard::Up) {
       if (!body_.is_jumping && !body_.has_jumped) {
@@ -93,7 +124,31 @@ void Player::Update(const std::vector<sf::FloatRect>& collision_bounds, float de
   if (!is_dead_) {
     if (grace_time_ > 0.0f) {
       grace_time_ -= delta_time;
+    } else {
+      changing_state_ = false;
     }
+
+    sf::Vector2f current_position = player_sprite_.getPosition();
+
+    // Animation
+    animation_time_ += delta_time;
+    const float animation_speed = 0.1f;
+    if (animation_time_ >= animation_speed && std::abs(body_.x_speed) > 0) {
+
+      animation_time_ = 0.0f;
+
+      std::vector<sf::Sprite>& current_sprites = player_sprites_[status_];
+      static int frame_index = 0;
+      if (status_ == Status::NORMAL) frame_index = (frame_index + 1) % (current_sprites.size() - 2);
+      else frame_index = (frame_index + 1) % (current_sprites.size() - 3);
+      player_sprite_ = current_sprites[frame_index];
+    }
+
+    if (std::abs(body_.x_speed) <= 0.01f) player_sprite_ = player_sprites_[status_][0];
+
+    player_sprite_.setPosition(current_position);
+    player_sprite_.setScale(x_scale_, 1.0f);
+
     // Gravity
     body_.y_speed += delta_time * body_.gravity;
     if (body_.y_speed >= body_.terminal_velocity) {
@@ -193,4 +248,26 @@ void Player::Reset() {
   body_.is_jumping = false;
   body_.has_jumped = false;
   is_dead_ = false;
+  status_ = Status::NORMAL;
+}
+
+void Player::Downgrade() {
+  changing_state_ = true;
+  sf::FloatRect bounds = player_sprite_.getGlobalBounds();
+  float bottom = bounds.top + bounds.height;
+  if (status_ == Status::NORMAL) {
+    Die(true);
+  } else {
+    status_ = Status::NORMAL;
+    player_sprite_.setPosition(player_sprite_.getPosition().x, bottom);
+    SetGracePeriod(0.3f);
+  }
+}
+
+void Player::Upgrade(Status status) {
+  status_ = status;
+}
+
+bool Player::ChangingState() const {
+  return changing_state_;
 }
