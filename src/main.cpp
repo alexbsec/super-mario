@@ -10,8 +10,10 @@
 
 int main() {
   sf::RenderWindow window(sf::VideoMode(600, 400), "Super Mario");
+  LoadSoundtrack("assets/song/ground-theme.mp3", false);
 
   while (true) {
+    LoadSoundtrack("assets/song/ground-theme.mp3", true);
     std::vector<std::unique_ptr<Enemy>> enemies;
     std::vector<sf::FloatRect> mario_collision_bounds, enemy_collision_bounds;
 
@@ -19,7 +21,7 @@ int main() {
 
     enemies = SetEnemies();
 
-    Player mario("assets/MarioIdle.png");
+    Player mario("assets/animation/mario/MarioCompleteSheet.png");
     Map map = GetTestMap();
     Map bg = GetBackground();
 
